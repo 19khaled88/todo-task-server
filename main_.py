@@ -9,6 +9,11 @@ from mongoengine import connect, disconnect
 from mongoengine.queryset.visitor import Q
 from pydantic import BaseModel
 from setting import tutorial1
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+URI = os.getenv('DATABASE_URL')
 
 
 class NewEmployee(BaseModel):
@@ -36,7 +41,7 @@ def ErrorResponseModel(error, code, message):
 
 
 app = FastAPI()
-connect(host="mongodb+srv://khaled:VNHAybzMnVDF6NMq@cluster0.ka5da.mongodb.net/hrms?retryWrites=true&w=majority")
+connect(host=URI)
 
 
 @app.get('/')

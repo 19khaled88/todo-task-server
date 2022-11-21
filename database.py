@@ -12,7 +12,3 @@ def get_db(db_name='hrms'):
     db = client.get_database(db_name)
 
     return db
-
-
-# client = MongoClient(
-#     "mongodb+srv://khaled:VNHAybzMnVDF6NMq@cluster0.ka5da.mongodb.net/hrms?retryWrites=true&w=majority")
