@@ -1,6 +1,7 @@
 
 import uuid
 from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
 
 from database import get_db
 from fastapi import FastAPI
@@ -9,27 +10,23 @@ from pydantic import BaseModel
 
 class Todo(BaseModel):
     id: int
-    skill: str
+    todo: str
+    status: str
+
+
+class CreateTodo(BaseModel):
+    id: int
+    todo: str
     status: str
 
     # class Config:
     #     orm_mode = True
 
 
-# def student_helper(student) -> dict:
-#     return {
-#         "id": str(student["_id"]),
-#         "fullname": student["fullname"],
-#         "email": student["email"],
-#         "course_of_study": student["course_of_study"],
-#         "year": student["year"],
-#         "GPA": student["gpa"],
-#     }
-
 def todo_helper(todo) -> dict:
     return {
-        "id": str(todo["id"]),
-        "skill": todo["skill"],
+        "id": int(todo["id"]),
+        "todo": todo["todo"],
         "status": todo["status"],
 
     }
@@ -37,11 +34,18 @@ def todo_helper(todo) -> dict:
 
 class TodoUpdate(BaseModel):
     id: int
-    skill: Optional[str]
+    todo: Optional[str]
     status: Optional[str]
 
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins="*",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
@@ -67,15 +71,41 @@ async def get_all_todo():
     return todos
 
 
+# @app.post("/todo")
+# def create_todo(data: Todo):
+#     db = get_db()
+#     col = db.get_collection("Todos")
+#     new_todo = col.insert_one(data.dict())
+#     if new_todo .acknowledged:
+#         return {"message": f"{data.skill} Todos  created", "status": "200","success":"true"}
+#     return {"message": "error occured while creating a todo", "status": "400","success":"false"}
+
+
+@app.get('/matchTodo/{status}')
+async def get_matched_todo(status: str):
+    todos = []
+    db = get_db()
+    col = db.get_collection("Todos")
+    for todo in col.find():
+        if todo['status'] == status:
+
+            todos.append(todo_helper(todo))
+
+        # todos.append(todo_helper(todo))
+
+    return todos
+
+
 @app.post("/todo")
-def create_todo(data: Todo):
+def create_todo(data: CreateTodo):
+
     db = get_db()
     col = db.get_collection("Todos")
     new_todo = col.insert_one(data.dict())
-    if new_todo .acknowledged:
-        return {"message": f"{data.skill} Todos  created"}
-    return {"message": "error occured while creating a todo"}
 
+    if new_todo .acknowledged:
+        return {"message": f"{data.todo} Todos  created", "status": "200", "success": "true"}
+    return {"message": "error occured while creating a todo", "status": "400", "success": "false"}
 
 # @app.put("/student")
 # def update_student(data: StudnetsUpdate):
@@ -87,6 +117,7 @@ def create_todo(data: Todo):
 #         return {"message": f"Students updated."}
 #     return {"message": f"error occured while updating student {data.name}"}
 
+
 @app.put("/todo")
 def update_todo(data: TodoUpdate):
     db = get_db()
@@ -94,15 +125,16 @@ def update_todo(data: TodoUpdate):
     todo_dict = {k: v for k, v in data.dict().items() if v is not None}
     result = col.update_one({"id": data.id}, {"$set": todo_dict})
     if result.modified_count == 1:
-        return {"message": f"Todo updated."}
-    return {"message": f"error occured while updating todo {data.skill}"}
+        return {"message": f"Todo updated.", "status": "200", "success": "true"}
+    return {"message": f"error occured while updating todo {data.todo}", "status": "400", "success": "false"}
 
 
 @app.delete("/todo/{id}")
 def delete_todo(id: int):
+
     db = get_db()
     col = db.get_collection("Todos")
     result = col.delete_one({"id": id})
     if result.deleted_count == 1:
-        return {"message": "Todo deleted"}
-    return {"message": "error occured while deleting todo."}
+        return {"message": "Todo deleted", "status": "200", "success": "true"}
+    return {"message": "error occured while deleting todo.", "status": "400", "success": "false"}
